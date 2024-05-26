@@ -1,5 +1,6 @@
 package com.tutorials.broadcastreceiver
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.IntentFilter
@@ -11,27 +12,39 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.currentCompositionLocalContext
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.tutorials.broadcastreceiver.ui.theme.BroadcastReceiverTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val testBroadcastReceiver = TestBroadcastReceiver()
@@ -40,8 +53,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-Intent()
-        registerReceiver(testBroadcastReceiver, IntentFilter("TEST_ACTION"))
+        Intent()
+        registerReceiver(testBroadcastReceiver, IntentFilter("TEST_ACTION"), RECEIVER_EXPORTED)
         registerReceiver(airplaneMode, IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED))
         viewModel = MainViewModel()
         viewModel.setContext(context = this, activity = this)
@@ -68,7 +81,7 @@ Intent()
                     }
                     Toggle(viewModel = viewModel)
                     AlertDialogCompose()
-
+                    SnackbarDemo()
                 }
 //                }
             }
@@ -82,7 +95,7 @@ Intent()
     }
 
     @Composable
-    private fun sendBroadcast(){
+    private fun sendBroadcast() {
         Button(modifier = Modifier
             .height(40.dp),
             onClick = {
@@ -95,6 +108,7 @@ Intent()
         }
         Spacer(modifier = Modifier.height(20.dp))
     }
+
     private fun sendEmail() {
         val intent = Intent(Intent.ACTION_SEND).apply {
 //            action = Intent.ACTION_SEND
@@ -111,7 +125,7 @@ Intent()
 fun Toggle(viewModel: MainViewModel) {
 
     val checked = remember { mutableStateOf(true) }
-    Checkbox(checked = checked.value, onCheckedChange = {checked.value = it})
+    Checkbox(checked = checked.value, onCheckedChange = { checked.value = it })
     Switch(checked = checked.value, onCheckedChange = { checked.value = it })
 
     Button(onClick = { viewModel.sharedPrefActions("String", checked.value) }) {
@@ -165,4 +179,60 @@ fun AlertDialogCompose() {
             }
         }
     }
+}
+
+@Composable
+fun SnackbarDemo() {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        content = { innerPadding ->
+            var clickCount by remember { mutableStateOf(0) }
+            Button(
+                onClick = {
+                    // show snackbar as a suspend function
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Snackbar # ${++clickCount}")
+                    }
+                }
+            ) {
+                Text(
+                    modifier = Modifier.padding(innerPadding),
+                    text = "Show snackbar"
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun SnackbarDemo1() {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            var clickCount by remember { mutableStateOf(0) }
+            ExtendedFloatingActionButton(
+                onClick = {
+                    // show snackbar as a suspend function
+                    scope.launch {
+                        snackbarHostState.showSnackbar(
+                            "Snackbar # ${++clickCount}"
+                        )
+                    }
+                }
+            ) { Text("Show snackbar") }
+        },
+        content = { innerPadding ->
+            Text(
+                text = "Body content",
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .wrapContentSize()
+            )
+        }
+    )
 }
